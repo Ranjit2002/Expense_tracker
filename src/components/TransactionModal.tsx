@@ -110,16 +110,16 @@ export const TransactionModal: React.FC = () => {
   const isIncome = type === 'income';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
       <div
-        className="relative w-full max-w-lg max-h-[92vh] flex flex-col rounded-3xl glass-dropdown overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 animate-scale-up"
+        className="relative w-full max-w-lg max-h-[92vh] flex flex-col rounded-3xl glass-dropdown overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 animate-scale-up mx-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200/80 dark:border-slate-800">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2.5 rounded-2xl text-white shadow-md ${
+              className={`p-2 sm:p-2.5 rounded-2xl text-white shadow-md ${
                 isIncome
                   ? 'bg-gradient-to-tr from-emerald-500 to-teal-500 shadow-emerald-500/30'
                   : 'bg-gradient-to-tr from-rose-500 to-orange-500 shadow-rose-500/30'
@@ -128,7 +128,7 @@ export const TransactionModal: React.FC = () => {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold font-display text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-bold font-display text-slate-900 dark:text-white">
                 {editingTransaction ? 'Edit Transaction' : 'Record Transaction'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -146,7 +146,7 @@ export const TransactionModal: React.FC = () => {
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
           
           {/* Income vs Expense Segmented Control */}
           <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">

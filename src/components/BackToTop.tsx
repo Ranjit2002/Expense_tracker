@@ -1,83 +1,131 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronUp } from 'lucide-react';
 
 export const scrollToTop = () => {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  });
+  try {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  } catch {
+    window.scrollTo(0, 0);
+  }
 };
 
 interface FloatingBackToTopProps {
   bottomButtonId?: string;
+  threshold?: number;
+  hideDelay?: number;
 }
 
 export const FloatingBackToTop: React.FC<FloatingBackToTopProps> = ({
-  bottomButtonId = 'footer-back-to-top',
+  threshold = 60,
+  hideDelay = 1500,
 }) => {
-  const [isScrolledDown, setIsScrolledDown] = useState(false);
-  const [isBottomVisible, setIsBottomVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const hideTimerRef = useRef<number | null>(null);
+  const isHoveredRef = useRef(false);
+
+  // Keep isHoveredRef in sync with state
+  useEffect(() => {
+    isHoveredRef.current = isHovered;
+  }, [isHovered]);
 
   useEffect(() => {
-    // 1. Scroll listener for top threshold (>80px) and bottom proximity
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
+      const scrollY =
+        window.scrollY ||
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
 
-      // True when scrolled more than 80px down
-      const passedTopThreshold = scrollY > 80;
+      const windowHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const docHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      );
 
-      // True when scrolled to within 80px of the very bottom of the document
-      const reachedDocumentBottom = windowHeight + scrollY >= docHeight - 80;
+      // Check boundary conditions: at the top or scrolled till bottom
+      const isAtTop = scrollY <= threshold;
+      // Reached within 50px of the very bottom of the document
+      const isAtBottom = windowHeight + scrollY >= docHeight - 50;
 
-      setIsScrolledDown(passedTopThreshold);
-      if (reachedDocumentBottom) {
-        setIsBottomVisible(true);
+      // 1. Hide immediately if at the top or scrolled till bottom
+      if (isAtTop || isAtBottom) {
+        if (hideTimerRef.current) {
+          window.clearTimeout(hideTimerRef.current);
+          hideTimerRef.current = null;
+        }
+        setIsVisible(false);
+        return;
       }
+
+      // 2. While actively scrolling between top and bottom, show the button
+      setIsVisible(true);
+
+      // 3. Reset idle timer: hide button when scrolling stops
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+      }
+
+      hideTimerRef.current = window.setTimeout(() => {
+        // Do not hide if the user is currently hovering over the button
+        if (!isHoveredRef.current) {
+          setIsVisible(false);
+        }
+      }, hideDelay);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Run initial check
     handleScroll();
 
-    // 2. IntersectionObserver to detect when the bottom button enters or exits the viewport
-    let observer: IntersectionObserver | null = null;
-    const targetElement = document.getElementById(bottomButtonId);
-
-    if (targetElement && 'IntersectionObserver' in window) {
-      observer = new IntersectionObserver(
-        ([entry]) => {
-          setIsBottomVisible(entry.isIntersecting);
-        },
-        {
-          root: null,
-          threshold: 0.05, // Trigger as soon as 5% of bottom button is in view
-        }
-      );
-      observer.observe(targetElement);
-    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('touchmove', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (observer && targetElement) {
-        observer.unobserve(targetElement);
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
       }
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchmove', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
-  }, [bottomButtonId]);
+  }, [threshold, hideDelay]);
 
-  // Only show when scrolled past top (>80px) AND bottom button is NOT visible / not scrolled till bottom
-  const shouldShow = isScrolledDown && !isBottomVisible;
+  // When mouse leaves, schedule auto-hide
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = window.setTimeout(() => {
+      setIsVisible(false);
+    }, hideDelay);
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+    }
+  };
 
   return (
     <div
       className={`fixed bottom-6 right-6 z-40 transition-all duration-300 transform ${
-        shouldShow
+        isVisible
           ? 'opacity-100 translate-y-0 pointer-events-auto scale-100'
           : 'opacity-0 translate-y-4 pointer-events-none scale-90'
       }`}
     >
       <button
         onClick={scrollToTop}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className="group relative flex items-center gap-2 p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xl hover:shadow-indigo-500/25 hover:border-indigo-500/50 hover:bg-gradient-to-tr hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 hover:text-white active:scale-95 transition-all duration-300"
         aria-label="Back to top"
         title="Back to top"

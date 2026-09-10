@@ -12,11 +12,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('apex_theme') as Theme | null;
+    const savedTheme = localStorage.getItem('apex_theme_user_choice') as Theme | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       return savedTheme;
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Dark theme is the default
+    return 'dark';
   });
 
   useEffect(() => {
@@ -26,7 +27,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('apex_theme', theme);
+    localStorage.removeItem('apex_theme');
+    localStorage.setItem('apex_theme_user_choice', theme);
   }, [theme]);
 
   const toggleTheme = () => {
